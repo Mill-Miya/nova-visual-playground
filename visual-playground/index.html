@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#03080d"><title>N.O.V.A. / Presence study</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body data-level="idle" data-state="idle">
+<main id="stage" aria-label="N.O.V.A. visual prototype">
+ <canvas id="field" aria-hidden="true"></canvas>
+ <header class="masthead"><a class="wordmark" href="#" id="home">N.O.V.A.<span>NEURAL ORBITAL VIRTUAL ASSISTANT</span></a><div class="edition">PRESENCE STUDY <b>01</b><span>VISUAL PROTOTYPE / LOCAL SIMULATION</span></div></header>
+ <div class="edge-label left-edge">AUTONOMOUS PRESENCE — HUMAN CONNECTION</div><div class="edge-label right-edge">NOVA / EXPERIMENTAL INTERFACE</div>
+ <div id="core-anchor"><button id="core-hit" aria-label="N.O.V.A.を呼び出す" title="クリックで展開 / Escで収納"></button><div class="core-caption"><span class="eyebrow">INTELLIGENCE, PRESENT.</span><h1>N.O.V.A.</h1><div class="state-line"><i></i><span id="state-label">READY</span><span class="serial">/ N–07</span></div></div></div>
+ <div class="idle-invite"><span class="tiny-mark">+</span><p>A quiet presence.<small>COREに触れて、呼び出す</small></p></div>
+ <section class="hud hud-left-top" aria-label="Core status"><div class="panel-head"><span>01 / CORE STATUS</span><i></i></div><h2>SYSTEM <em>STABLE</em></h2><dl><div><dt>INTEGRITY</dt><dd>100.00 <small>%</small></dd></div><div><dt>COHERENCE</dt><dd>99.94 <small>%</small></dd></div></dl><div class="segments"></div><footer>NEURAL FIELD / ONLINE</footer></section>
+ <section class="hud hud-right-top" aria-label="Network"><div class="panel-head"><span>02 / NETWORK</span><i></i></div><h2>MEMORY <em>LINK</em></h2><dl><div><dt>LATENCY</dt><dd>008 <small>ms</small></dd></div><div><dt>SYNC</dt><dd>SECURE</dd></div></dl><div class="network-chart"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div><footer>LOCAL NODE / SIMULATED</footer></section>
+ <section class="hud hud-left-bottom" aria-label="Sensory systems"><div class="panel-head"><span>03 / SENSORY ARRAY</span><i></i></div><dl><div><dt>AUDIO</dt><dd id="audio-value">READY</dd></div><div><dt>VISION</dt><dd id="vision-value">STANDBY</dd></div><div><dt>DEVICES</dt><dd>01 <small>LINKED</small></dd></div></dl><div class="wave-chart" id="wave-chart" aria-hidden="true"></div><footer>INPUT FIELD / PASSIVE</footer></section>
+ <section class="hud hud-right-bottom" aria-label="Diagnostics"><div class="panel-head"><span>04 / DIAGNOSTICS</span><i></i></div><h2 id="diagnostic">FIELD BALANCED</h2><svg class="signal-chart" viewBox="0 0 230 45" aria-hidden="true"><path class="chart-grid" d="M0 10H230 M0 25H230 M0 40H230 M30 0V45 M80 0V45 M130 0V45 M180 0V45"/><path d="M0 34H15L20 30 24 35 31 34 36 12 40 34 60 34 65 24 69 35 90 34 96 5 100 35 118 34 124 25 130 35 149 34 157 15 161 35 184 34 190 28 195 34H230"/><path class="amber-path" d="M162 34H174L179 3 183 34H190"/></svg><footer>HARMONIC DRIFT <b>0.007%</b></footer></section>
+ <div class="axis-label axis-top">Y + 00.000 <span>ORBITAL FIELD</span></div><div class="axis-label axis-bottom"><span id="field-caption">CORE ACTIVE / ALL SYSTEMS NOMINAL</span><b>● ● ● ● ● ● ●</b></div>
+ <div class="scan-label" id="scan-label">ACQUIRING FIELD <span>X 042.8 / Y 018.6</span></div>
+ <aside id="notice" role="status"><span>INCOMING / 01</span><strong>MEMORY LINK ESTABLISHED</strong><small>同期が完了しました</small></aside>
+ <footer class="stage-footer"><span><i></i> LOCAL SIMULATION <b>NO LIVE CONNECTION</b></span><span id="clock">00:00:00</span><span>DESIGNED TO BE PRESENT.</span></footer>
+</main>
+<button id="toggle-controls" aria-expanded="true" aria-controls="controls">LAB CONTROLS <span>−</span></button>
+<aside id="controls" aria-label="開発用コントロール">
+ <div class="lab-heading"><span>VISUAL LAB <b>開発用</b></span><span id="level-readout">L1 / FLOATING</span></div>
+ <div class="state-buttons" role="group" aria-label="状態切替">
+ <button data-mode="idle" aria-pressed="true">01 Idle</button><button data-mode="active" aria-pressed="false">02 Active</button><button data-mode="listening" aria-pressed="false">03 Listening</button><button data-mode="thinking" aria-pressed="false">04 Thinking</button><button data-mode="speaking" aria-pressed="false">05 Speaking</button><button data-mode="scanning" aria-pressed="false">06 Scanning</button><button data-mode="notification" aria-pressed="false">07 Notify</button><button data-mode="error" aria-pressed="false">08 Error</button><button data-mode="full" aria-pressed="false">09 Full HUD</button>
+ </div>
+ <div class="lab-options"><label>CORE <input id="size" type="range" min="40" max="70" value="58" aria-label="Floating Coreのサイズ"><output id="size-value">58px</output></label><label><input id="sound" type="checkbox"> SOUND</label><button id="sequence">▶ SEQUENCE</button></div>
+ <p>1–9 状態切替 · Coreクリックで展開 · Esc 収納 · H 操作盤表示</p>
+</aside>
+<script src="app.js"></script>
+</body></html>

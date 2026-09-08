@@ -1,0 +1,7 @@
+{
+  "name": "nova-visual-playground",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Standalone N.O.V.A. presence prototype. No backend dependencies.",
+  "scripts": { "start": "node server.cjs", "check": "node --check app.js && node --check server.cjs && node smoke-test.cjs" }
+}
