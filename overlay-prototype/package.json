@@ -1,0 +1,15 @@
+{
+  "name": "nova-overlay-prototype",
+  "productName": "N.O.V.A. Overlay Prototype",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Independent Windows desktop host for the existing NOVA visual renderer",
+  "main": "main.cjs",
+  "scripts": {
+    "prepare:entry": "node prepare.cjs",
+    "start": "node prepare.cjs && electron .",
+    "check": "node --check main.cjs && node --check preload.cjs && node --check renderer.js && node test.cjs && node integration-test.cjs && node ../visual-playground/smoke-test.cjs",
+    "test:native": "node prepare.cjs && electron . --smoke"
+  },
+  "devDependencies": { "electron": "44.3.0" }
+}

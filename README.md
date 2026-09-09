@@ -1,10 +1,24 @@
 # N.O.V.A. Visual Playground
 
+University AI Integration v1 is available in the native host: [setup, protocol and state mapping](overlay-prototype/INTEGRATION_V1.md). The browser demo remains independent.
+
 A standalone visual prototype of an AI presence: Floating Core → Active Core → Full HUD.
 
 **[Open the live demo](https://mill-miya.github.io/nova-visual-playground/visual-playground/)**
 
 This is a visual simulation. It does not connect to an LLM, microphone, camera, database or device service.
+
+## Windows desktop overlay
+
+An independent Electron entry keeps the Floating Core above desktop apps with transparent Idle click-through. See [Overlay setup and controls](overlay-prototype/README.md).
+
+```powershell
+cd overlay-prototype
+npm ci
+npm start
+```
+
+Use **Ctrl+Alt+Space** to activate, drag the Core to move it, and **Esc** to return to Idle. Quit from its notification-area menu.
 
 ## Controls
 
