@@ -36,6 +36,11 @@ assert.equal(host.win.options.transparent,true);assert.equal(host.win.options.fr
 const trusted={sender:host.win.webContents,senderFrame:host.win.webContents.mainFrame};
 e.ipcMain.emit('nova-overlay:ready',{sender:{},senderFrame:{}});assert.equal(host.isReady(),false);
 e.ipcMain.emit('nova-overlay:ready',trusted);assert.equal(host.isReady(),true);assert.equal(host.win.messages.at(-1)[1].active,false);
+e.app.emit('second-instance',null,[],null,{integration:true});assert.equal(host.isActive(),false);
+host.setExternalState('thinking');assert.equal(host.win.messages.at(-1)[1].state,'thinking');assert.equal(host.win.ignored,true);
+host.setCoreSize(58);assert.equal(host.win.messages.at(-1)[1].state,'thinking');
+host.setExternalState('invalid');assert.equal(host.win.messages.at(-1)[1].state,'thinking');
+host.setExternalState('idle');
 e.globalShortcut.callback();assert.equal(host.isActive(),true);assert.equal(host.win.ignored,false);assert.equal(host.win.focusable,true);
 e.ipcMain.emit('nova-overlay:idle',{sender:host.win.webContents,senderFrame:{url:'https://example.com'}});assert.equal(host.isActive(),true);
 let prevented=false;host.win.webContents.emit('before-input-event',{preventDefault:()=>prevented=true},{type:'keyDown',key:'Escape'});assert.ok(prevented);assert.equal(host.isActive(),false);assert.equal(host.win.ignored,true);assert.equal(host.win.focusable,false);

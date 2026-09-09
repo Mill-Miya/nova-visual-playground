@@ -17,7 +17,9 @@
   const slider=document.querySelector('#size');
   slider.value=String(settings.coreSize);
   slider.dispatchEvent(new Event('input',{bubbles:true}));
-  window.nova.setState(settings.active?'active':'idle');
+  const next=settings.state||(settings.active?'active':'idle');
+  if(window.nova.getState().state!==next)window.nova.setState(next);
+  document.body.dataset.overlayInteractive=String(settings.active);
   labelCore();
   document.body.dataset.overlayReady='true';
   receiving=false;

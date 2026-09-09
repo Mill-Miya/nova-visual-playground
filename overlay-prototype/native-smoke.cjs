@@ -36,5 +36,21 @@ module.exports=async function nativeSmoke(host,profile){
  host.win.webContents.sendInputEvent({type:'keyDown',keyCode:'Escape'});
  await wait(1400);assert.equal((await inspect()).state.state,'idle');assert.equal(host.win.isFocusable(),false);
  host.save();const saved=JSON.parse(fs.readFileSync(path.join(profile,'settings.json'),'utf8'));assert.equal(saved.coreSize,70);assert.ok(Number.isFinite(saved.position.x));
- fs.writeFileSync(path.join(profile,'native-report.json'),JSON.stringify({idle,active,idlePixels,activePixels,alwaysOnTop:host.win.isAlwaysOnTop(),hotkeyRegistered:host.hotkeyRegistered(),saved,passed:true},null,2));
+ assert.ok(host.integration,'Native smoke must start the IPC listener');
+ const {connect,send}=require('./integration-test.cjs'),descriptor=host.integration.descriptor;
+ const socket=await connect(descriptor);
+ try{
+  for(const state of ['active','scanning','thinking','speaking','notification','error','idle']){
+   await send(socket,descriptor,{op:'state',state});await wait(100);
+   assert.equal((await inspect()).state.state,state);
+   assert.equal(host.win.isFocusable(),false,'External activity must not steal focus');
+  }
+  await send(socket,descriptor,{op:'state',state:'thinking'});await wait(50);
+ }finally{socket.destroy();}
+ await wait(100);assert.equal((await inspect()).state.state,'idle','Disconnect returns to Idle');
+ const reconnect=await connect(descriptor);
+ await send(reconnect,descriptor,{op:'state',state:'notification'});await wait(100);
+ assert.equal((await inspect()).state.state,'notification');reconnect.destroy();
+ await wait(100);assert.equal((await inspect()).state.state,'idle');
+ fs.writeFileSync(path.join(profile,'native-report.json'),JSON.stringify({idle,active,idlePixels,activePixels,integration:true,alwaysOnTop:host.win.isAlwaysOnTop(),hotkeyRegistered:host.hotkeyRegistered(),saved,passed:true},null,2));
 };

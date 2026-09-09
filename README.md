@@ -1,5 +1,7 @@
 # N.O.V.A. Visual Playground
 
+University AI Integration v1 is available in the native host: [setup, protocol and state mapping](overlay-prototype/INTEGRATION_V1.md). The browser demo remains independent.
+
 A standalone visual prototype of an AI presence: Floating Core → Active Core → Full HUD.
 
 **[Open the live demo](https://mill-miya.github.io/nova-visual-playground/visual-playground/)**

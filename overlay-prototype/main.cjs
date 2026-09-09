@@ -18,7 +18,7 @@ function trayImage(nativeImage){
 }
 function createHost(electron,{settingsFile,hotkey=DEFAULT_HOTKEY,smoke=false}={}){
  const {app,BrowserWindow,Tray,Menu,nativeImage,globalShortcut,ipcMain,screen}=electron;
- let ready=false,active=false,saveTimer=null,quitting=false;
+ let ready=false,active=false,saveTimer=null,quitting=false,externalState='idle';
  let settings;
  try{settings=normalizeSettings(JSON.parse(fs.readFileSync(settingsFile,'utf8')));}catch{settings=normalizeSettings({});}
  const areas=()=>screen.getAllDisplays().map(display=>display.workArea);
@@ -46,7 +46,11 @@ function createHost(electron,{settingsFile,hotkey=DEFAULT_HOTKEY,smoke=false}={}
  win.webContents.on('will-attach-webview',event=>event.preventDefault());
  win.on('page-title-updated',event=>event.preventDefault());
  const tray=new Tray(trayImage(nativeImage));
- const send=()=>{if(ready&&!win.isDestroyed())win.webContents.send('nova-overlay:settings',{active,coreSize:settings.coreSize});};
+ const send=()=>{if(ready&&!win.isDestroyed())win.webContents.send('nova-overlay:settings',{active,coreSize:settings.coreSize,state:externalState==='idle'&&active?'active':externalState});};
+ function setExternalState(state){
+  if(!Object.hasOwn(require('./integration.cjs').PRIORITY,state))return;
+  externalState=state;send();
+ }
  function save(){
   clearTimeout(saveTimer);saveTimer=null;if(win.isDestroyed())return;
   settings=settingsForDisk(settings,win.getBounds());
@@ -81,8 +85,8 @@ function createHost(electron,{settingsFile,hotkey=DEFAULT_HOTKEY,smoke=false}={}
  const onIdle=event=>{if(authorized(event))setActive(false);};
  ipcMain.on('nova-overlay:ready',onReady);ipcMain.on('nova-overlay:idle',onIdle);
  win.webContents.on('before-input-event',(event,input)=>{if(active&&input.type==='keyDown'&&input.key==='Escape'){event.preventDefault();setActive(false);}});
- win.webContents.on('render-process-gone',()=>{console.error('NOVA renderer stopped. Exiting to avoid an invisible input-blocking window.');app.quit();});
- win.webContents.on('did-fail-load',(_event,code,description)=>{if(code!==-3){console.error('NOVA entry failed:',description);app.quit();}});
+ win.webContents.on('render-process-gone',()=>{console.error('NOVA renderer stopped. Exiting to avoid an invisible input-blocking window.');smoke?app.exit(1):app.quit();});
+ win.webContents.on('did-fail-load',(_event,code,description)=>{if(code!==-3){console.error('NOVA entry failed:',description);smoke?app.exit(1):app.quit();}});
  let registered=false;
  try{registered=globalShortcut.register(hotkey,()=>setActive(!active));}catch(error){console.error('Hotkey unavailable:',error.message);}
  if(!registered)console.warn(`NOVA hotkey ${hotkey} is unavailable. Activate/quit through the tray menu.`);
@@ -95,19 +99,28 @@ function createHost(electron,{settingsFile,hotkey=DEFAULT_HOTKEY,smoke=false}={}
  win.on('closed',()=>{if(!quitting)app.quit();});
  app.on('before-quit',()=>{quitting=true;save();});
  app.on('will-quit',()=>{clearTimeout(saveTimer);globalShortcut.unregisterAll();tray.destroy();ipcMain.removeListener('nova-overlay:ready',onReady);ipcMain.removeListener('nova-overlay:idle',onIdle);screen.removeListener('display-removed',displayChanged);screen.removeListener('display-metrics-changed',displayChanged);});
- app.on('second-instance',()=>setActive(true));
+ app.on('second-instance',(_event,_argv,_cwd,data)=>{if(!data?.integration)setActive(true);});
  updateTray();win.loadFile(entry);
- return {win,tray,setActive,setCoreSize,resetPosition,save,getSettings:()=>({...settings}),isActive:()=>active,isReady:()=>ready,hotkeyRegistered:()=>registered};
+ return {win,tray,setActive,setExternalState,setCoreSize,resetPosition,save,getSettings:()=>({...settings}),isActive:()=>active,isReady:()=>ready,hotkeyRegistered:()=>registered};
 }
 
 async function run(){
- const electron=require('electron'),{app}=electron,smoke=process.argv.includes('--smoke');
+ const electron=require('electron'),{app}=electron,smoke=process.argv.includes('--smoke'),integrationSmoke=process.argv.includes('--integration-smoke');
  app.setName(TITLE);
- const userData=smoke?path.join(__dirname,'.test-profile'):path.join(app.getPath('appData'),'NOVA Overlay Prototype');
+ const userData=integrationSmoke?path.join(__dirname,'.test-profile/integration-native'):smoke?path.join(__dirname,'.test-profile'):path.join(app.getPath('appData'),'NOVA Overlay Prototype');
  app.setPath('userData',userData);
- if(!app.requestSingleInstanceLock()){app.quit();return;}
+ if(!app.requestSingleInstanceLock({integration:!!process.env.NOVA_OVERLAY_OWNER_TOKEN})){smoke?app.exit(1):app.quit();return;}
  await app.whenReady();buildEntry();
  const host=createHost(electron,{settingsFile:path.join(userData,'settings.json'),hotkey:process.env.NOVA_OVERLAY_HOTKEY||DEFAULT_HOTKEY,smoke});
+ if(integrationSmoke)require('./integration-observer.cjs')(host,app,userData);
+ try{
+  const integration=await require('./integration.cjs').startIntegration({
+   ...(smoke?{file:path.join(userData,'endpoint.json')}:{}),
+   onState:state=>host.setExternalState(state),onShutdown:()=>app.quit()
+  });
+  host.integration=integration;
+  app.on('will-quit',()=>integration.close());
+ }catch(error){console.error('NOVA integration unavailable:',error.message);}
  if(smoke){try{await require('./native-smoke.cjs')(host,userData);console.log('NOVA native smoke passed.');app.quit();}catch(error){console.error(error);app.exit(1);}}
 }
 // Electron's app loader does not guarantee Node's require.main identity.

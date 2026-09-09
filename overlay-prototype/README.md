@@ -1,5 +1,7 @@
 # N.O.V.A. Windows Overlay Prototype
 
+**Integration v1:** University AIの状態表示を追加しました。セットアップ、認証付きローカルIPC、優先順位、所有者別の終了処理、テストは [INTEGRATION_V1.md](INTEGRATION_V1.md) を参照してください。以下の独立Overlay操作も維持します。
+
 ブラウザ版を残し、同じCore描画をWindowsデスクトップ上に常駐させる独立エントリです。OSログイン時の自動起動登録はしません。
 
 ## 起動
@@ -52,7 +54,7 @@ Active時はCoreが約140pxへ拡大し、Core上がWindowsのネイティブド
 
 `visual-playground/` のブラウザ版・9状態・window.nova.setState/getState/statesと追加デモAPIは維持します。共有描画の `data-surface="overlay"` 分岐は背景グリッドとIdleのアンバーを消すだけで、通常ブラウザ描画には適用しません。HTML・CSS・Canvas主体の表現、DPR上限2、非表示時停止、reduced-motionを引き継ぎます。
 
-将来のFull HUDは既存rendererとAPIを使い、ホストサイズ・配置とOverlayの表示スタイルを拡張できます。今回はFull HUD常駐・実通信・音声取得・university-ai本体への統合は行いません。
+将来のFull HUDは既存rendererとAPIを使い、ホストサイズ・配置とOverlayの表示スタイルを拡張できます。Integration v1はuniversity-ai本体からの状態表示のみを追加し、回答本文表示・Full HUD常駐・音声取得は実装しません。
 
 ## ホストの境界
 
