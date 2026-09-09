@@ -1,0 +1,8 @@
+/* This stylesheet belongs only to the native overlay entry. */
+html,body,#stage{background:transparent!important;background-color:transparent!important}
+#stage:after{display:none!important}
+.lab-chrome,.edge-label,.axis-label,.idle-invite,.hud,.core-caption,#scan-label,#demo-label,#controls,#toggle-controls{display:none!important}
+#stage{height:100vh;width:100vw}
+#core-hit{left:calc(50% - 85px);top:calc(46% - 85px);transform:none;z-index:10;width:170px!important;height:170px!important;cursor:grab;-webkit-app-region:drag;app-region:drag;outline:none}
+body[data-level="idle"] #core-hit{cursor:default;-webkit-app-region:no-drag;app-region:no-drag}
+#core-hit:active{cursor:grabbing}

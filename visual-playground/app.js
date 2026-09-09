@@ -8,6 +8,7 @@ const buttons=[...document.querySelectorAll('[data-mode]')];
 const chrome=[...document.querySelectorAll('.lab-chrome')];
 const panels=[...document.querySelectorAll('.hud')].map(el=>({el,head:el.querySelector('.panel-head'),title:el.querySelector('h2'),rows:el.querySelector('dl'),footer:el.querySelector('footer'),kind:'',x:0,y:0,width:0,wire:0}));
 const ctx=ui.field.getContext('2d'), reduced=matchMedia('(prefers-reduced-motion: reduce)');
+const overlaySurface=document.body.dataset.surface==='overlay';
 const modes=Object.freeze(['idle','active','listening','thinking','speaking','scanning','notification','error','full']);
 const labels={idle:'IDLE',active:'READY',listening:'LISTENING',thinking:'THINKING',speaking:'SPEAKING',scanning:'SCANNING',notification:'EVENT RECEIVED',error:'SIGNAL DEGRADED',full:'CORE ACTIVE'};
 // Each state has a deliberate, sparse set; no state displays more than three panels.
@@ -189,6 +190,7 @@ function line(x1,y1,x2,y2,alpha=.2,rgb=cyan,width=.6){ctx.beginPath();ctx.moveTo
 function dot(x,y,r=1,alpha=1,rgb=pale,glow=8){ctx.save();ctx.shadowColor=color(rgb,.7);ctx.shadowBlur=glow;ctx.fillStyle=color(rgb,alpha);ctx.beginPath();ctx.arc(x,y,Math.max(.01,r),0,TAU);ctx.fill();ctx.restore();}
 function halo(r,alpha,rgb=cyan){r=Math.max(.01,r);const g=ctx.createRadialGradient(0,0,0,0,0,r);g.addColorStop(0,color(rgb,alpha));g.addColorStop(.3,color(rgb,alpha*.32));g.addColorStop(1,color(rgb,0));ctx.fillStyle=g;ctx.fillRect(-r,-r,r*2,r*2);}
 function background(full){
+ if(overlaySurface)return;
  if(cinematic&&mode==='idle')return;
  ctx.lineWidth=.5;ctx.strokeStyle=color(cyan,.012+full*.021);ctx.beginPath();
  for(let x=w/2%48;x<w;x+=48){ctx.moveTo(x,90);ctx.lineTo(x,h-65);}for(let y=h*.46%48;y<h-65;y+=48){ctx.moveTo(35,y);ctx.lineTo(w-35,y);}ctx.stroke();
@@ -211,12 +213,12 @@ function sphere(r,t,focus,converge,shell=1,nucleus=1,errorOffset=0){
   const perspective=1+depth*.13;
   const x=Math.cos(a)*latitudeScale*radius*perspective;
   const y=(latitude*.83+depth*.22)*radius*perspective;
-  const tint=i%11===0?[225,202,154]:i%5===0?[215,226,215]:cyan;
+  const tint=i%11===0&&!(overlaySurface&&mode==='idle')?[225,202,154]:i%5===0?[215,226,215]:cyan;
   dot(x,y,(r>80?.58:.38)*(1+depth*.25),.09+.21*(depth+1)/2,tint,depth>0?1.5:0);
  }
  // Offset specular glint and warm reflected rim make the shell read as a volume.
  ctx.save();ctx.translate(-r*.35,-r*.43);ctx.scale(1,.55);halo(r*.34,.24,[217,231,226]);ctx.restore();
- ctx.restore();arc(r*.99,3.45,5.30,.36,.45,pale);arc(r*.95,.13,1.92,.16,.45);arc(r*.94,.50,.88,.21,.5,[223,190,128]);arc(r*.83,3.7,4.4,.10,.35);
+ ctx.restore();arc(r*.99,3.45,5.30,.36,.45,pale);arc(r*.95,.13,1.92,.16,.45);if(!(overlaySurface&&mode==='idle'))arc(r*.94,.50,.88,.21,.5,[223,190,128]);arc(r*.83,3.7,4.4,.10,.35);
  ctx.restore();
  ctx.save();ctx.globalAlpha*=nucleus;ctx.translate(nucleusX,nucleusY);
  halo(r*.64,(.12+focus*.10)*breath,pale);halo(r*.21,(.45+focus*.15)*breath,pale);
@@ -233,7 +235,7 @@ function signature(outer,active,full,age,alpha,nodeAlpha,errorAmount){
  const turn=orbit*.14+errorAmount*.055;
  arc(outer*1.035,turn+.13,turn+2.33,.24,.4,pale);
  arc(outer*1.035,turn+3.64,turn+5.67,.15,.35,pale);
- arc(outer*.98,turn+5.02,turn+5.24,.27,.8,[223,190,128]);
+ if(!(overlaySurface&&mode==='idle'))arc(outer*.98,turn+5.02,turn+5.24,.27,.8,[223,190,128]);
  if(active>.01){
   ctx.save();ctx.globalAlpha*=active;
   for(let i=0;i<2;i++){
@@ -250,7 +252,7 @@ function signature(outer,active,full,age,alpha,nodeAlpha,errorAmount){
 
  if(demo?.name==='device')angle=mix(angle,0,smooth((time-demo.start-.8)/.7));
  const p=orbitPoint(outer*(1+detour),angle);
- dot(p.x,p.y,active>0?1.5:1.05,nodeAlpha,amber,active>0?7:4);
+ if(!(overlaySurface&&mode==='idle'))dot(p.x,p.y,active>0?1.5:1.05,nodeAlpha,amber,active>0?7:4);
  ctx.restore();
 }
 function drawWires(cx,cy,outer){

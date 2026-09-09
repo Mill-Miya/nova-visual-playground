@@ -6,6 +6,18 @@ A standalone visual prototype of an AI presence: Floating Core â†’ Active Core â
 
 This is a visual simulation. It does not connect to an LLM, microphone, camera, database or device service.
 
+## Windows desktop overlay
+
+An independent Electron entry keeps the Floating Core above desktop apps with transparent Idle click-through. See [Overlay setup and controls](overlay-prototype/README.md).
+
+```powershell
+cd overlay-prototype
+npm ci
+npm start
+```
+
+Use **Ctrl+Alt+Space** to activate, drag the Core to move it, and **Esc** to return to Idle. Quit from its notification-area menu.
+
 ## Controls
 
 - Click the core to expand or collapse.
