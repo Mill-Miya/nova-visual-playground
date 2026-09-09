@@ -34,7 +34,7 @@ const smooth=x=>{x=clamp(x);return x*x*(3-2*x);};
 const mix=(a,b,t)=>a+(b-a)*t;
 let w=1,h=1,stageX=0,stageY=0,idleSize=58,mode='idle',level='idle',phase=0,target=0,time=0,last=null,entered=0;
 let frameId=0,dirty=true,lastDraw=-1,lastClock=-1,collapseUntil=0,lockPlayed=false,recovered=false,completionAt=-10;
-let orbit=0,orbitSpeed=.008,nodePhase=.7,nucleusX=0,nucleusY=0,cinematic=false;
+let orbit=0,orbitSpeed=.008,nodePhase=.7,particlePhase=0,particleSpeed=.011,nucleusX=0,nucleusY=0,cinematic=false;
 let pointer={x:0,y:0,inside:false}, audioContext, demo=null, demoStage='',powered=true;
 let hudEpoch=0,retireAt=null,desiredKinds=[],hudKindKey='';
 let sequenceIndex=-1,sequenceDue=0;
@@ -197,16 +197,24 @@ function sphere(r,t,focus,converge,shell=1,nucleus=1,errorOffset=0){
  ctx.save();ctx.globalAlpha*=shell;
  halo(r*1.75,.046*breath);
  const glass=ctx.createRadialGradient(-r*.38,-r*.45,r*.02,0,0,r);
- glass.addColorStop(0,'#498eab65');glass.addColorStop(.18,'#18425548');glass.addColorStop(.58,'#020913f2');glass.addColorStop(.86,'#07141dda');glass.addColorStop(.97,'#32607776');glass.addColorStop(1,'#bcefffad');
+ glass.addColorStop(0,'#c7e4dfb0');glass.addColorStop(.14,'#477f997d');glass.addColorStop(.42,'#143346a8');glass.addColorStop(.70,'#020a15f5');glass.addColorStop(.90,'#0e2638cb');glass.addColorStop(.98,'#6595a688');glass.addColorStop(1,'#ccecf2a8');
  ctx.fillStyle=glass;ctx.beginPath();ctx.arc(0,0,r,0,TAU);ctx.fill();
  ctx.save();ctx.beginPath();ctx.arc(0,0,r*.96,0,TAU);ctx.clip();ctx.rotate(-.32+errorOffset);
  for(let i=-3;i<=3;i++){ctx.beginPath();ctx.ellipse(0,i*r*.23,r*Math.sqrt(1-(i*.23)**2),r*.10,0,0,TAU);ctx.strokeStyle=color(cyan,.075);ctx.lineWidth=.45;ctx.stroke();}
  for(let i=0;i<6;i++){ctx.beginPath();ctx.ellipse(0,0,Math.max(.01,Math.abs(Math.sin(i*Math.PI/6+.3))*r),r,0,0,TAU);ctx.strokeStyle=color(cyan,.075);ctx.stroke();}
  for(let i=0;i<34;i++){
-  const a=i*2.399+t*.011,base=.20+.68*((i*17%37)/37);
-  const dist=r*base*(1-converge*.30);dot(Math.cos(a)*dist,Math.sin(a)*dist*.82,r>80?.70:.44,.28+(i%4)*.08,cyan,2);
+  const a=i*2.399+(reduced.matches?0:particlePhase),latitude=Math.sin(i*1.73)*.72;
+  const radius=r*(.45+.39*((i*17%37)/37))*(1-converge*.30);
+  const latitudeScale=Math.sqrt(1-latitude*latitude),depth=Math.sin(a)*latitudeScale;
+  const perspective=1+depth*.13;
+  const x=Math.cos(a)*latitudeScale*radius*perspective;
+  const y=(latitude*.83+depth*.22)*radius*perspective;
+  const tint=i%11===0?[225,202,154]:i%5===0?[215,226,215]:cyan;
+  dot(x,y,(r>80?1:.65)*(1+depth*.40),.20+.48*(depth+1)/2,tint,depth>0?4:1);
  }
- ctx.restore();arc(r*.99,3.45,5.30,.65,.8,pale);arc(r*.95,.13,1.92,.25,.8);arc(r*.83,3.7,4.4,.12,.45);
+ // Offset specular glint and warm reflected rim make the shell read as a volume.
+ ctx.save();ctx.translate(-r*.35,-r*.43);ctx.scale(1,.55);halo(r*.34,.24,[217,231,226]);ctx.restore();
+ ctx.restore();arc(r*.99,3.45,5.30,.65,.8,pale);arc(r*.95,.13,1.92,.25,.8);arc(r*.94,.50,.88,.29,.9,[223,190,128]);arc(r*.83,3.7,4.4,.12,.45);
  ctx.restore();
  ctx.save();ctx.globalAlpha*=nucleus;ctx.translate(nucleusX,nucleusY);
  halo(r*.64,(.12+focus*.10)*breath,pale);halo(r*.21,(.45+focus*.15)*breath,pale);
@@ -217,16 +225,18 @@ function sphere(r,t,focus,converge,shell=1,nucleus=1,errorOffset=0){
 function orbitPoint(outer,angle){return {x:Math.cos(angle)*outer*1.035,y:Math.sin(angle)*outer*1.035};}
 function signature(outer,active,full,age,alpha,nodeAlpha,errorAmount){
  ctx.save();ctx.globalAlpha*=alpha;
- // Centered concentric rings. Opposite segments keep the structure balanced.
- arc(outer*.91,0,TAU,.29,.6);
+ // Circular, centered structure with unequal highlights; no tilted external orbits.
+ arc(outer*.91,0,TAU,.19,.6);
  arc(outer*1.035,0,TAU,.19,.55);
  const turn=orbit*.14+errorAmount*.055;
- for(let i=0;i<2;i++)arc(outer*1.035,turn+i*Math.PI+.13,turn+i*Math.PI+2.74,.47,.8,pale);
+ arc(outer*1.035,turn+.13,turn+2.33,.43,.8,pale);
+ arc(outer*1.035,turn+3.64,turn+5.67,.25,.65,pale);
+ arc(outer*.98,turn+5.02,turn+5.24,.27,.8,[223,190,128]);
  if(active>.01){
   ctx.save();ctx.globalAlpha*=active;
   for(let i=0;i<2;i++){
-   arc(outer*.83,orbit+i*Math.PI+.2,orbit+i*Math.PI+2.7,.24,.6);
-   arc(outer*.98,-orbit+i*Math.PI+.8,-orbit+i*Math.PI+1.45,.36,.7);
+   arc(outer*.83,orbit+i*Math.PI+.2,orbit+i*Math.PI+(i?2.15:2.7),i?.14:.24,.6);
+   arc(outer*.98,-orbit+i*Math.PI+.8,-orbit+i*Math.PI+(i?1.17:1.45),i?.22:.36,.7);
   }
   for(let i=0;i<72;i++){const a=i/72*TAU,major=i%6===0;line(Math.cos(a)*outer*1.055,Math.sin(a)*outer*1.055,Math.cos(a)*outer*(major?1.084:1.066),Math.sin(a)*outer*(major?1.084:1.066),major?.31:.13,cyan,major?.6:.4);}
   if(full>.01){ctx.globalAlpha*=full;arc(outer*1.14,0,TAU,.10,.5);ctx.setLineDash([1,6]);arc(outer*1.21,0,TAU,.17,.5);ctx.setLineDash([]);for(let j=0;j<3;j++)for(let i=0;i<2;i++)arc(outer*(.72+j*.08),orbit+j*.4+i*Math.PI,orbit+j*.4+i*Math.PI+1.2,.18,.7);}
@@ -297,6 +307,9 @@ function draw(dt){
  // Deceleration has a 0.4s envelope; only the amber node accelerates during thought.
  const speed=mode==='thinking'?.055*(1-smooth(age/.4))+.003:mode==='idle'?.008:.055;
  orbitSpeed=speed;if(!reduced.matches){orbit+=orbitSpeed*dt;nodePhase+=dt*(mode==='thinking'?1.65:mode==='idle'?.028:.13);}
+ const desiredParticleSpeed=mode==='idle'?.011:mode==='thinking'?.035:.38;
+ particleSpeed=mix(particleSpeed,desiredParticleSpeed,1-Math.exp(-dt*2.7));
+ if(!reduced.matches)particlePhase+=particleSpeed*dt;
  const cx=w*.5+(reduced.matches?0:Math.sin(t*.19)*.8),cy=h*.46+(reduced.matches?0:Math.sin(t*.37)*1.2);
  let nx=0,ny=0;
  if(pointer.inside&&!reduced.matches){const dx=pointer.x-cx,dy=pointer.y-cy,dist=Math.hypot(dx,dy);if(dist<300&&dist>0){const offset=4*smooth(dist/70)*(1-smooth((dist-150)/150));nx=dx/dist*offset;ny=dy/dist*offset;}}
