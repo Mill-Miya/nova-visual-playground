@@ -35,6 +35,7 @@ const mix=(a,b,t)=>a+(b-a)*t;
 let w=1,h=1,stageX=0,stageY=0,idleSize=58,mode='idle',level='idle',phase=0,target=0,time=0,last=null,entered=0;
 let frameId=0,dirty=true,lastDraw=-1,lastClock=-1,collapseUntil=0,lockPlayed=false,recovered=false,completionAt=-10;
 let orbit=0,orbitSpeed=.008,nodePhase=.7,particlePhase=0,particleSpeed=.011,nucleusX=0,nucleusY=0,cinematic=false;
+let sweepStarted=-10,sweepProgress=1;
 let pointer={x:0,y:0,inside:false}, audioContext, demo=null, demoStage='',powered=true;
 let hudEpoch=0,retireAt=null,desiredKinds=[],hudKindKey='';
 let sequenceIndex=-1,sequenceDue=0;
@@ -66,6 +67,7 @@ function setMode(next,{automatic=false,keepDemo=false}={}){
  if(!automatic)stopSequence();
  if(!keepDemo)clearDemo();
  const old=mode,previousTarget=target;
+ if(old!==next){sweepStarted=time;sweepProgress=0;}
  mode=next;entered=time;lockPlayed=false;recovered=false;
  if(old==='thinking'&&next!=='thinking')completionAt=time;
  level=next==='idle'?'idle':['full','scanning','error'].includes(next)?'full':'active';
@@ -197,7 +199,7 @@ function sphere(r,t,focus,converge,shell=1,nucleus=1,errorOffset=0){
  ctx.save();ctx.globalAlpha*=shell;
  halo(r*1.75,.046*breath);
  const glass=ctx.createRadialGradient(-r*.38,-r*.45,r*.02,0,0,r);
- glass.addColorStop(0,'#c7e4dfb0');glass.addColorStop(.14,'#477f997d');glass.addColorStop(.42,'#143346a8');glass.addColorStop(.70,'#020a15f5');glass.addColorStop(.90,'#0e2638cb');glass.addColorStop(.98,'#6595a688');glass.addColorStop(1,'#ccecf2a8');
+ glass.addColorStop(0,'#c7e4dfb0');glass.addColorStop(.14,'#477f997d');glass.addColorStop(.42,'#143346a8');glass.addColorStop(.70,'#020a15f5');glass.addColorStop(.90,'#0e263898');glass.addColorStop(.98,'#6595a63d');glass.addColorStop(1,'#ccecf24d');
  ctx.fillStyle=glass;ctx.beginPath();ctx.arc(0,0,r,0,TAU);ctx.fill();
  ctx.save();ctx.beginPath();ctx.arc(0,0,r*.96,0,TAU);ctx.clip();ctx.rotate(-.32+errorOffset);
  for(let i=-3;i<=3;i++){ctx.beginPath();ctx.ellipse(0,i*r*.23,r*Math.sqrt(1-(i*.23)**2),r*.10,0,0,TAU);ctx.strokeStyle=color(cyan,.075);ctx.lineWidth=.45;ctx.stroke();}
@@ -210,11 +212,11 @@ function sphere(r,t,focus,converge,shell=1,nucleus=1,errorOffset=0){
   const x=Math.cos(a)*latitudeScale*radius*perspective;
   const y=(latitude*.83+depth*.22)*radius*perspective;
   const tint=i%11===0?[225,202,154]:i%5===0?[215,226,215]:cyan;
-  dot(x,y,(r>80?1:.65)*(1+depth*.40),.20+.48*(depth+1)/2,tint,depth>0?4:1);
+  dot(x,y,(r>80?.58:.38)*(1+depth*.25),.09+.21*(depth+1)/2,tint,depth>0?1.5:0);
  }
  // Offset specular glint and warm reflected rim make the shell read as a volume.
  ctx.save();ctx.translate(-r*.35,-r*.43);ctx.scale(1,.55);halo(r*.34,.24,[217,231,226]);ctx.restore();
- ctx.restore();arc(r*.99,3.45,5.30,.65,.8,pale);arc(r*.95,.13,1.92,.25,.8);arc(r*.94,.50,.88,.29,.9,[223,190,128]);arc(r*.83,3.7,4.4,.12,.45);
+ ctx.restore();arc(r*.99,3.45,5.30,.36,.45,pale);arc(r*.95,.13,1.92,.16,.45);arc(r*.94,.50,.88,.21,.5,[223,190,128]);arc(r*.83,3.7,4.4,.10,.35);
  ctx.restore();
  ctx.save();ctx.globalAlpha*=nucleus;ctx.translate(nucleusX,nucleusY);
  halo(r*.64,(.12+focus*.10)*breath,pale);halo(r*.21,(.45+focus*.15)*breath,pale);
@@ -226,11 +228,11 @@ function orbitPoint(outer,angle){return {x:Math.cos(angle)*outer*1.035,y:Math.si
 function signature(outer,active,full,age,alpha,nodeAlpha,errorAmount){
  ctx.save();ctx.globalAlpha*=alpha;
  // Circular, centered structure with unequal highlights; no tilted external orbits.
- arc(outer*.91,0,TAU,.19,.6);
- arc(outer*1.035,0,TAU,.19,.55);
+ arc(outer*.91,0,TAU,.12,.4);
+ arc(outer*1.035,0,TAU,.085,.3);
  const turn=orbit*.14+errorAmount*.055;
- arc(outer*1.035,turn+.13,turn+2.33,.43,.8,pale);
- arc(outer*1.035,turn+3.64,turn+5.67,.25,.65,pale);
+ arc(outer*1.035,turn+.13,turn+2.33,.24,.4,pale);
+ arc(outer*1.035,turn+3.64,turn+5.67,.15,.35,pale);
  arc(outer*.98,turn+5.02,turn+5.24,.27,.8,[223,190,128]);
  if(active>.01){
   ctx.save();ctx.globalAlpha*=active;
@@ -239,15 +241,13 @@ function signature(outer,active,full,age,alpha,nodeAlpha,errorAmount){
    arc(outer*.98,-orbit+i*Math.PI+.8,-orbit+i*Math.PI+(i?1.17:1.45),i?.22:.36,.7);
   }
   for(let i=0;i<72;i++){const a=i/72*TAU,major=i%6===0;line(Math.cos(a)*outer*1.055,Math.sin(a)*outer*1.055,Math.cos(a)*outer*(major?1.084:1.066),Math.sin(a)*outer*(major?1.084:1.066),major?.31:.13,cyan,major?.6:.4);}
-  if(full>.01){ctx.globalAlpha*=full;arc(outer*1.14,0,TAU,.10,.5);ctx.setLineDash([1,6]);arc(outer*1.21,0,TAU,.17,.5);ctx.setLineDash([]);for(let j=0;j<3;j++)for(let i=0;i<2;i++)arc(outer*(.72+j*.08),orbit+j*.4+i*Math.PI,orbit+j*.4+i*Math.PI+1.2,.18,.7);}
+  if(full>.01){ctx.globalAlpha*=full;arc(outer*1.14,0,TAU,.07,.3);ctx.setLineDash([1,6]);arc(outer*1.21,0,TAU,.09,.3);ctx.setLineDash([]);for(let j=0;j<3;j++)for(let i=0;i<2;i++)arc(outer*(.72+j*.08),orbit+j*.4+i*Math.PI,orbit+j*.4+i*Math.PI+1.2,.18,.7);}
   ctx.restore();
  }
  // One amber node, shared by every mode. Error leaves the orbit once, then rejoins it.
  const detour=mode==='error'&&!reduced.matches?Math.sin(Math.PI*clamp(age/1.8))*.14:0;
  let angle=reduced.matches?.7:nodePhase;
- if(!reduced.matches&&pointer.inside){const dx=pointer.x-w*.5,dy=pointer.y-h*.46,dist=Math.hypot(dx,dy);if(dist<300)angle+=Math.sin(Math.atan2(dy,dx)-angle)*.08*(1-dist/300);}
- const buildAge=time-hudEpoch;
- if(panels.some(p=>p.kind)&&retireAt===null&&buildAge<.7){const destination=panels[0].x<w/2?Math.PI:0;angle+=Math.sin(destination-angle)*.2*smooth(buildAge/.35);}
+
  if(demo?.name==='device')angle=mix(angle,0,smooth((time-demo.start-.8)/.7));
  const p=orbitPoint(outer*(1+detour),angle);
  dot(p.x,p.y,active>0?1.5:1.05,nodeAlpha,amber,active>0?7:4);
@@ -306,10 +306,14 @@ function draw(dt){
  const errorAmount=mode==='error'?1-smooth((age-1.8)/3.8):0;
  // Deceleration has a 0.4s envelope; only the amber node accelerates during thought.
  const speed=mode==='thinking'?.055*(1-smooth(age/.4))+.003:mode==='idle'?.008:.055;
- orbitSpeed=speed;if(!reduced.matches){orbit+=orbitSpeed*dt;nodePhase+=dt*(mode==='thinking'?1.65:mode==='idle'?.028:.13);}
+ const sweeping=time-sweepStarted<.85;
+ const progress=smooth((time-sweepStarted)/.85);
+ const sweepDelta=Math.max(0,progress-sweepProgress)*TAU;
+ sweepProgress=progress;
+ orbitSpeed=speed;if(!reduced.matches){orbit+=orbitSpeed*dt;nodePhase+=sweepDelta+(sweeping?0:dt*(mode==='thinking'?.35:mode==='idle'?.028:.09));}
  const desiredParticleSpeed=mode==='idle'?.011:mode==='thinking'?.035:.38;
  particleSpeed=mix(particleSpeed,desiredParticleSpeed,1-Math.exp(-dt*2.7));
- if(!reduced.matches)particlePhase+=particleSpeed*dt;
+ if(!reduced.matches)particlePhase+=sweepDelta+(sweeping?0:particleSpeed*dt);
  const cx=w*.5+(reduced.matches?0:Math.sin(t*.19)*.8),cy=h*.46+(reduced.matches?0:Math.sin(t*.37)*1.2);
  let nx=0,ny=0;
  if(pointer.inside&&!reduced.matches){const dx=pointer.x-cx,dy=pointer.y-cy,dist=Math.hypot(dx,dy);if(dist<300&&dist>0){const offset=4*smooth(dist/70)*(1-smooth((dist-150)/150));nx=dx/dist*offset;ny=dy/dist*offset;}}
