@@ -3,6 +3,21 @@ html,body,#stage{background:transparent!important;background-color:transparent!i
 #stage:after{display:none!important}
 .lab-chrome,.edge-label,.axis-label,.idle-invite,.hud,.core-caption,#scan-label,#demo-label,#controls,#toggle-controls{display:none!important}
 #stage{height:100vh;width:100vw}
-#core-hit{left:calc(50% - 85px);top:calc(46% - 85px);transform:none;z-index:10;width:170px!important;height:170px!important;cursor:grab;-webkit-app-region:drag;app-region:drag;outline:none}
+#core-hit{left:calc(50% - 52px);top:calc(46% - 52px);transform:none;z-index:10;width:104px!important;height:104px!important;cursor:pointer;-webkit-app-region:no-drag;app-region:no-drag;outline:none}
 body[data-overlay-interactive="false"] #core-hit{cursor:default;-webkit-app-region:no-drag;app-region:no-drag}
-#core-hit:active{cursor:grabbing}
+#core-menu[hidden]{display:none}
+#core-menu{position:fixed;inset:0;z-index:12;pointer-events:none}
+.orbit{position:absolute;width:214px;height:214px;left:calc(50% - 107px);top:calc(46% - 107px);border:1px solid #80d9df38;border-radius:50%}
+#core-menu button{position:absolute;width:92px;height:44px;padding:0;border:1px solid #8bcbd35c;border-radius:12px;background:#07191fec;color:#ccebf0;font:500 13px/1.2 "Yu Gothic UI",sans-serif;letter-spacing:.08em;pointer-events:auto;cursor:pointer;app-region:no-drag;transition:background .12s,border-color .12s}
+#core-menu button:hover,#core-menu button:focus-visible{background:#133940;border-color:#9de9ef;outline:1px solid #9de9ef55;outline-offset:3px}
+#core-menu button:active{border-color:#deb97a;color:#f3d5a4}
+#core-menu button:disabled{opacity:.4;cursor:default}
+[data-command="open_documents"]{left:calc(50% - 46px);top:calc(46% - 129px)}
+[data-command="ask_ai"]{left:calc(50% + 59px);top:calc(46% - 22px)}
+[data-command="ask_region"]{left:calc(50% - 151px);top:calc(46% - 22px)}
+[data-command="open_settings"]{left:calc(50% - 46px);top:calc(46% + 85px)}
+#move-grip{display:none;position:fixed;bottom:12px;left:130px;width:60px;padding:6px 0;text-align:center;font:10px sans-serif;letter-spacing:.18em;color:#93c4cb85;app-region:drag}
+body[data-overlay-interactive="true"][data-menu-open="false"] #move-grip{display:block}
+#command-status{position:fixed;bottom:2px;left:4px;right:4px;margin:0;text-align:center;color:#a9c8cb;font:11px "Yu Gothic UI",sans-serif;pointer-events:none}
+body[data-menu-open="true"] canvas{transform:scale(.82);transform-origin:50% 46%}
+@media(prefers-reduced-motion:reduce){#core-menu button{transition:none}}

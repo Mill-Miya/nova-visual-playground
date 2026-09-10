@@ -22,9 +22,11 @@ module.exports=async function nativeSmoke(host,profile){
  };
  const idlePixels=await capture('idle');
  host.setActive(true);await wait(1500);
- const active=await inspect();assert.equal(active.state.state,'active');assert.equal(active.dragRegion,'drag');assert.equal(host.win.isFocusable(),true);
+ const active=await inspect();assert.equal(active.state.state,'active');assert.equal(active.dragRegion,'no-drag');assert.equal(host.win.isFocusable(),true);
  const activePixels=await capture('active');assert.ok(activePixels>idlePixels,'Active Core must enlarge');
  await host.win.webContents.executeJavaScript("document.querySelector('#core-hit').click()");
+ await wait(100);assert.equal(host.isMenuOpen(),true);assert.equal(await host.win.webContents.executeJavaScript("document.querySelector('#core-menu').hidden"),false);
+ await capture('menu');
  assert.equal((await inspect()).state.state,'active','Overlay click must not open browser Full HUD');
  const original=host.win.getBounds();
  host.win.setPosition(original.x-20,original.y-20);
@@ -33,6 +35,8 @@ module.exports=async function nativeSmoke(host,profile){
  assert.deepEqual(moved.position,{x:original.x-20,y:original.y-20},'Native move event must persist position');
  host.win.setPosition(original.x,original.y);
  host.setCoreSize(70);await wait(80);assert.equal(await host.win.webContents.executeJavaScript("document.querySelector('#size').value"),'70');
+ host.win.webContents.sendInputEvent({type:'keyDown',keyCode:'Escape'});
+ await wait(100);assert.equal(host.isMenuOpen(),false);assert.equal(host.isActive(),true);
  host.win.webContents.sendInputEvent({type:'keyDown',keyCode:'Escape'});
  await wait(1400);assert.equal((await inspect()).state.state,'idle');assert.equal(host.win.isFocusable(),false);
  host.save();const saved=JSON.parse(fs.readFileSync(path.join(profile,'settings.json'),'utf8'));assert.equal(saved.coreSize,70);assert.ok(Number.isFinite(saved.position.x));
@@ -52,5 +56,21 @@ module.exports=async function nativeSmoke(host,profile){
  await send(reconnect,descriptor,{op:'state',state:'notification'});await wait(100);
  assert.equal((await inspect()).state.state,'notification');reconnect.destroy();
  await wait(100);assert.equal((await inspect()).state.state,'idle');
+ const {peer}=require('./command-test.cjs'),commands=require('./integration.cjs').COMMANDS;
+ const appPeer=await peer(descriptor);
+ try{
+  await appPeer.send({op:'register_commands',commands});await wait(100);
+  host.setActive(true);await wait(100);
+  await host.win.webContents.executeJavaScript("document.querySelector('#core-hit').click()");await wait(100);
+  await capture('menu-connected');
+  await host.win.webContents.executeJavaScript("document.querySelector('[data-command=ask_ai]').click()");
+  const request=await appPeer.read();assert.equal(request.command,'ask_ai');assert.equal(host.isActive(),false);
+  await appPeer.send({...request,op:'command_result',ok:true});await wait(100);
+  host.setActive(true);await wait(100);await host.win.webContents.executeJavaScript("document.querySelector('#core-hit').click()");await wait(100);
+  await host.win.webContents.executeJavaScript("document.body.dispatchEvent(new PointerEvent('pointerdown',{bubbles:true}))");await wait(100);assert.equal(host.isMenuOpen(),false);
+  await host.win.webContents.executeJavaScript("document.querySelector('#core-hit').click()");await wait(100);assert.equal(host.isMenuOpen(),true);
+  appPeer.socket.destroy();await wait(150);assert.equal(host.isMenuOpen(),false);
+  host.setActive(false);
+ }finally{appPeer.socket.destroy();}
  fs.writeFileSync(path.join(profile,'native-report.json'),JSON.stringify({idle,active,idlePixels,activePixels,integration:true,alwaysOnTop:host.win.isAlwaysOnTop(),hotkeyRegistered:host.hotkeyRegistered(),saved,passed:true},null,2));
 };

@@ -20,6 +20,7 @@ const file=path.join(__dirname,'.test-profile/unit/settings.json');fs.mkdirSync(
 function environment(registers=true){
  const app=new EventEmitter();app.quit=()=>{app.emit('before-quit');app.emit('will-quit');};
  const ipcMain=new EventEmitter();
+ ipcMain.handle=(name,fn)=>{ipcMain[name]=fn;};ipcMain.removeHandler=name=>{delete ipcMain[name];};
  const screen=new EventEmitter();screen.getAllDisplays=()=>screens.map(workArea=>({workArea}));screen.getPrimaryDisplay=()=>({workArea:screens[0]});
  class Window extends EventEmitter{
   constructor(options){super();this.options=options;this.bounds={x:options.x,y:options.y,width:options.width,height:options.height};this.messages=[];this.webContents=new EventEmitter();this.webContents.mainFrame={url:pathToFileURL(path.join(__dirname,'.generated/index.html')).href};this.webContents.send=(...message)=>this.messages.push(message);this.webContents.setWindowOpenHandler=fn=>this.openHandler=fn;this.webContents.session={setPermissionRequestHandler:fn=>this.permissionHandler=fn,setPermissionCheckHandler:fn=>this.permissionCheck=fn,webRequest:{onBeforeRequest:fn=>this.requestHandler=fn}};}
@@ -45,6 +46,10 @@ e.globalShortcut.callback();assert.equal(host.isActive(),true);assert.equal(host
 e.ipcMain.emit('nova-overlay:idle',{sender:host.win.webContents,senderFrame:{url:'https://example.com'}});assert.equal(host.isActive(),true);
 let prevented=false;host.win.webContents.emit('before-input-event',{preventDefault:()=>prevented=true},{type:'keyDown',key:'Escape'});assert.ok(prevented);assert.equal(host.isActive(),false);assert.equal(host.win.ignored,true);assert.equal(host.win.focusable,false);
 host.setActive(true);e.ipcMain.emit('nova-overlay:idle',trusted);assert.equal(host.isActive(),false);
+host.setActive(true);e.ipcMain.emit('nova-overlay:menu',trusted,true);assert.equal(host.isMenuOpen(),true);assert.equal(host.win.ignored,false);
+host.win.webContents.emit('before-input-event',{preventDefault(){}},{type:'keyDown',key:'Escape'});assert.equal(host.isMenuOpen(),false);assert.equal(host.isActive(),true);
+e.ipcMain.emit('nova-overlay:menu',trusted,true);host.setCommands([]);assert.equal(host.isMenuOpen(),false);
+host.setMenuOpen(true);host.win.emit('blur');assert.equal(host.isMenuOpen(),false);assert.equal(host.win.ignored,true);
 host.setCoreSize(70);host.win.setPosition(-800,240);host.save();assert.deepEqual(JSON.parse(fs.readFileSync(file,'utf8')).position,{x:-800,y:240});assert.equal(JSON.parse(fs.readFileSync(file,'utf8')).coreSize,70);
 let permission;host.win.permissionHandler(null,'media',v=>permission=v);assert.equal(permission,false);assert.equal(host.win.permissionCheck(),false);assert.equal(host.win.openHandler().action,'deny');
 for(const [url,expected] of [['https://example.com',true],[pathToFileURL(path.join(__dirname,'../visual-playground/app.js')).href,false],[pathToFileURL(file).href,true]]){let cancel;host.win.requestHandler({url},r=>cancel=r.cancel);assert.equal(cancel,expected);}
