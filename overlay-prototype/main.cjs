@@ -18,7 +18,7 @@ function trayImage(nativeImage){
 }
 function createHost(electron,{settingsFile,hotkey=DEFAULT_HOTKEY,smoke=false}={}){
  const {app,BrowserWindow,Tray,Menu,nativeImage,globalShortcut,ipcMain,screen}=electron;
- let ready=false,active=false,saveTimer=null,quitting=false,externalState='idle';
+ let ready=false,active=false,menuOpen=false,saveTimer=null,quitting=false,externalState='idle',commands=[],commandSender=null;
  let settings;
  try{settings=normalizeSettings(JSON.parse(fs.readFileSync(settingsFile,'utf8')));}catch{settings=normalizeSettings({});}
  const areas=()=>screen.getAllDisplays().map(display=>display.workArea);
@@ -46,9 +46,12 @@ function createHost(electron,{settingsFile,hotkey=DEFAULT_HOTKEY,smoke=false}={}
  win.webContents.on('will-attach-webview',event=>event.preventDefault());
  win.on('page-title-updated',event=>event.preventDefault());
  const tray=new Tray(trayImage(nativeImage));
- const send=()=>{if(ready&&!win.isDestroyed())win.webContents.send('nova-overlay:settings',{active,coreSize:settings.coreSize,state:externalState==='idle'&&active?'active':externalState});};
+ const send=()=>{if(ready&&!win.isDestroyed())win.webContents.send('nova-overlay:settings',{active,menuOpen,commands,coreSize:settings.coreSize,state:externalState==='idle'&&active?'active':externalState});};
+ function setCommands(value){commands=value;if(!commands.length)menuOpen=false;send();}
+ function setMenuOpen(value){menuOpen=active&&value===true;send();}
  function setExternalState(state){
   if(!Object.hasOwn(require('./integration.cjs').PRIORITY,state))return;
+  if(state==='idle'&&externalState!=='idle')menuOpen=false;
   externalState=state;send();
  }
  function save(){
@@ -60,7 +63,7 @@ function createHost(electron,{settingsFile,hotkey=DEFAULT_HOTKEY,smoke=false}={}
  function resetPosition(){const p=defaultPosition(screen.getPrimaryDisplay().workArea);const fitted=fitPosition(p,areas());win.setPosition(fitted.x,fitted.y);save();}
  function setCoreSize(size){settings=normalizeSettings({...settings,coreSize:size});send();save();updateTray();}
  function updateTray(){
-  tray.setToolTip(`N.O.V.A. — ${active?'Active / drag Core to move':'Idle / click-through'}\n${registered?hotkey:'Use tray menu to activate'}`);
+  tray.setToolTip(`N.O.V.A. — ${active?'Active / click Core for actions':'Idle / click-through'}\n${registered?hotkey:'Use tray menu to activate'}`);
   tray.setContextMenu(Menu.buildFromTemplate([
    {label:active?'Return to Idle (click-through)':'Activate Core (interactive)',click:()=>setActive(!active)},
    {label:'Idle / Esc',click:()=>setActive(false)},
@@ -73,6 +76,7 @@ function createHost(electron,{settingsFile,hotkey=DEFAULT_HOTKEY,smoke=false}={}
  }
  function setActive(value){
   active=!!value;
+  if(!active)menuOpen=false;
   win.setIgnoreMouseEvents(!active,{forward:true});
   win.setFocusable(active);
   if(active){win.show();win.focus();}else{win.blur();win.showInactive();}
@@ -83,8 +87,18 @@ function createHost(electron,{settingsFile,hotkey=DEFAULT_HOTKEY,smoke=false}={}
  function authorized(event){return event.sender===win.webContents&&event.senderFrame===win.webContents.mainFrame&&event.senderFrame.url===entryURL;}
  const onReady=event=>{if(!authorized(event))return;ready=true;send();win.showInactive();win.setAlwaysOnTop(true,'screen-saver');};
  const onIdle=event=>{if(authorized(event))setActive(false);};
+ const onMenu=(event,value)=>{if(authorized(event)&&typeof value==='boolean')setMenuOpen(value);};
+ const onCommand=async(event,command)=>{
+  if(!authorized(event)||!require('./integration.cjs').COMMANDS.includes(command))return {ok:false,error:'invalid'};
+  if(!active||!menuOpen||!commands.includes(command)||!commandSender)return {ok:false,error:'unavailable'};
+  // Release native focus before Qt creates a dialog or region selection.
+  setActive(false);
+  try{return await commandSender(command);}catch{return {ok:false,error:'disconnected'};}
+ };
  ipcMain.on('nova-overlay:ready',onReady);ipcMain.on('nova-overlay:idle',onIdle);
- win.webContents.on('before-input-event',(event,input)=>{if(active&&input.type==='keyDown'&&input.key==='Escape'){event.preventDefault();setActive(false);}});
+ ipcMain.on('nova-overlay:menu',onMenu);ipcMain.handle('nova-overlay:command',onCommand);
+ win.webContents.on('before-input-event',(event,input)=>{if(active&&input.type==='keyDown'&&input.key==='Escape'){event.preventDefault();menuOpen?setMenuOpen(false):setActive(false);}});
+ win.on('blur',()=>{if(active)setActive(false);});
  win.webContents.on('render-process-gone',()=>{console.error('NOVA renderer stopped. Exiting to avoid an invisible input-blocking window.');smoke?app.exit(1):app.quit();});
  win.webContents.on('did-fail-load',(_event,code,description)=>{if(code!==-3){console.error('NOVA entry failed:',description);smoke?app.exit(1):app.quit();}});
  let registered=false;
@@ -100,8 +114,9 @@ function createHost(electron,{settingsFile,hotkey=DEFAULT_HOTKEY,smoke=false}={}
  app.on('before-quit',()=>{quitting=true;save();});
  app.on('will-quit',()=>{clearTimeout(saveTimer);globalShortcut.unregisterAll();tray.destroy();ipcMain.removeListener('nova-overlay:ready',onReady);ipcMain.removeListener('nova-overlay:idle',onIdle);screen.removeListener('display-removed',displayChanged);screen.removeListener('display-metrics-changed',displayChanged);});
  app.on('second-instance',(_event,_argv,_cwd,data)=>{if(!data?.integration)setActive(true);});
+ app.on('will-quit',()=>{ipcMain.removeListener('nova-overlay:menu',onMenu);ipcMain.removeHandler('nova-overlay:command');});
  updateTray();win.loadFile(entry);
- return {win,tray,setActive,setExternalState,setCoreSize,resetPosition,save,getSettings:()=>({...settings}),isActive:()=>active,isReady:()=>ready,hotkeyRegistered:()=>registered};
+ return {win,tray,setActive,setExternalState,setCommands,setMenuOpen,setCommandSender:sender=>{commandSender=sender;},setCoreSize,resetPosition,save,getSettings:()=>({...settings}),isActive:()=>active,isMenuOpen:()=>menuOpen,isReady:()=>ready,hotkeyRegistered:()=>registered};
 }
 
 async function run(){
@@ -116,9 +131,10 @@ async function run(){
  try{
   const integration=await require('./integration.cjs').startIntegration({
    ...(smoke?{file:path.join(userData,'endpoint.json')}:{}),
-   onState:state=>host.setExternalState(state),onShutdown:()=>app.quit()
+   onState:state=>host.setExternalState(state),onCommands:commands=>host.setCommands(commands),onShutdown:()=>app.quit()
   });
   host.integration=integration;
+  host.setCommandSender(command=>integration.requestCommand(command));
   app.on('will-quit',()=>integration.close());
  }catch(error){console.error('NOVA integration unavailable:',error.message);}
  if(smoke){try{await require('./native-smoke.cjs')(host,userData);console.log('NOVA native smoke passed.');app.quit();}catch(error){console.error(error);app.exit(1);}}
