@@ -22,4 +22,4 @@ body[data-demo="boot"] .core-caption,body[data-demo="shutdown"] .core-caption,bo
 .stage-footer .creator-credit{display:inline-flex;align-items:center;gap:7px;color:#86a9b5;font:9px Consolas,monospace;letter-spacing:.04em;text-decoration:none;white-space:nowrap}
 .stage-footer .creator-credit:hover,.stage-footer .creator-credit:focus-visible{color:#e2f6fb}
 .stage-footer .creator-credit img{width:22px;height:22px;display:block;object-fit:contain}
-@media(max-width:720px){.stage-footer>span:nth-child(3){visibility:hidden}.stage-footer .creator-credit{font-size:8px}}
+@media(max-width:720px){.stage-footer>span:first-child,.stage-footer>span:nth-child(3){display:none}.stage-footer .creator-credit{font-size:8px}}
