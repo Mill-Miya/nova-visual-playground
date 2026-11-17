@@ -36,6 +36,6 @@ Open http://127.0.0.1:4173. GitHub Pages serves static files from the root of th
 
 ## Creator
 
-<a href="https://github.com/Mill-Miya"><picture><source media="(prefers-color-scheme: dark)" srcset="visual-playground/assets/brand/r-logo-white.svg"><img src="visual-playground/assets/brand/r-logo-black.svg" alt="Mill-Miya R logo" width="44"></picture></a>
+<a href="https://mill-miya.github.io/"><picture><source media="(prefers-color-scheme: dark)" srcset="visual-playground/assets/brand/r-logo-white.svg"><img src="visual-playground/assets/brand/r-logo-black.svg" alt="Mill-Miya R logo" width="44"></picture></a>
 
 Created by [Mill-Miya](https://github.com/Mill-Miya). This R signature marks the creator, not the N.O.V.A. visual identity.
