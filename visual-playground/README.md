@@ -97,3 +97,9 @@ university-ai、DB、OCR、LLM、Scheduler、Memory repository等は変更しま
 Codex内蔵ブラウザーでIdle、Full HUD、Listening、Thinking、Speaking、Scanningの表示を確認。1280×720のHUD座標、844×390と390×844の配置、仮想ターゲットのロック、Device LinkのQR風表示と完了、Shutdown消失、Boot復帰、Cinematic切替を確認しました。最後のユーザー指定により、楕円・非対称軌道を対称な同心円へ変更した後もFull HUDとCinematic Idle、Device Link、Boot/Shutdownを確認しています。
 
 未確認：Safari/Firefox、実機モバイル、スクリーンリーダー音声、効果音の聴感、HDR等の表示差、実GPUのFPS計測。reduced-motionは自動テストで検証し、実ブラウザーのOS設定切替は未実施。モーションの映画的な質感は最終的にユーザーの目視評価が必要です。
+
+## Creator
+
+<a href="https://github.com/Mill-Miya"><picture><source media="(prefers-color-scheme: dark)" srcset="assets/brand/r-logo-white.svg"><img src="assets/brand/r-logo-black.svg" alt="Mill-Miya R logo" width="44"></picture></a>
+
+Created by [Mill-Miya](https://github.com/Mill-Miya). The personal R logo is distinct from the N.O.V.A. core symbol.
